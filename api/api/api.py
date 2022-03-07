@@ -9,13 +9,13 @@ import psutil
 def output_data():
     response = dict()
     # TODO put `percpu=True`
-    response['cpu'] = psutil.cpu_percent()
-    response['virtualmem'] = dict()
+    response["cpu"] = psutil.cpu_percent()
+    response["virtualmem"] = dict()
     for attr in ["total", "available", "percent", "used", "free"]:
-        response['virtualmem'][attr] = getattr(psutil.virtual_memory(), attr)
-    response['swapmem'] = dict()
+        response["virtualmem"][attr] = getattr(psutil.virtual_memory(), attr)
+    response["swapmem"] = dict()
     for attr in ["total", "percent", "used", "free"]:
-        response['swapmem'][attr] = getattr(psutil.swap_memory(), attr)
+        response["swapmem"][attr] = getattr(psutil.swap_memory(), attr)
     processes = []
     for pid in psutil.pids():
         process = dict()
@@ -35,45 +35,57 @@ def output_data():
             ]:
                 process[meth] = getattr(p, meth)()
             # Just some aestethic corrections:
-            process['cmdline'] = " ".join(process.get("cmdline", ""))
-            process['cpu_percent'] = "{:.2f}".format(
+            process["cmdline"] = " ".join(process.get("cmdline", ""))
+            process["cpu_percent"] = "{:.2f}".format(
                 process.get("cpu_percent", 0) * 100
             )
-            process["create_time"] = datetime.fromtimestamp(process["create_time"]).strftime("%m/%d/%Y, %H:%M:%S")
-            process['memory_percent'] = "{:.2f}".format(
+            process["create_time"] = datetime.fromtimestamp(
+                process["create_time"]
+            ).strftime("%m/%d/%Y, %H:%M:%S")
+            process["memory_percent"] = "{:.2f}".format(
                 process.get("memory_percent", 0) * 100
             )
-            process['pid'] = pid
+            process["pid"] = pid
         except (
-            FileNotFoundError, PermissionError, AttributeError,
-            psutil.NoSuchProcess, psutil.AccessDenied
+            FileNotFoundError,
+            PermissionError,
+            AttributeError,
+            psutil.NoSuchProcess,
+            psutil.AccessDenied,
         ):
             process_exists = False
         if process_exists:
             processes.append(process)
-    response['processes'] = processes
-    return {'data': response, 'command': 'ping', 'status': "ok", 'message': ""}
+    response["processes"] = processes
+    return {"data": response, "command": "ping", "status": "ok", "message": ""}
 
 
 def kill_process(pid):
     r = dict()
-    r['command'] = "kill"
+    r["command"] = "kill"
     try:
         p = psutil.Process(pid)
         p.kill()
-    except:
-        r['status'] = "error"
+    except (
+            FileNotFoundError,
+            PermissionError,
+            AttributeError,
+            psutil.NoSuchProcess,
+            psutil.AccessDenied,
+    ):
+        r["status"] = "error"
     else:
-        r['status'] = "ok"
+        r["status"] = "ok"
     return r
+
 
 async def get_request(websocket):
     async for message in websocket:
         m = json.loads(message)
-        if m['command'] == "ping":
+        if m["command"] == "ping":
             response = output_data()
-        elif m['command'] == "kill":
-            response = kill_process(m['data']['pid'])
+        elif m["command"] == "kill":
+            response = kill_process(m["data"]["pid"])
         await websocket.send(json.dumps(response))
 
 
