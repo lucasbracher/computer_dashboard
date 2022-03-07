@@ -1,0 +1,16 @@
+/* Typography */
+
+.text-left {
+  text-align: left;
+}
+
+/* Design */
+.hscroll {
+    overflow-x: auto;
+}
+
+.dropdown-menu {
+    max-height: 280px;
+    overflow-y: auto;
+}
+
